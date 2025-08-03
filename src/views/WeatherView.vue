@@ -120,7 +120,7 @@ export default {
     //Get the current weather icon using the API link
     iconUrl() {
       return this.weatherData
-        ? `http://api.openweathermap.org/img/w/${this.weatherData.weather[0].icon}.png`
+        ? `https://openweathermap.org/img/w/${this.weatherData.weather[0].icon}.png`
         : null;
     },
   },
@@ -131,14 +131,32 @@ export default {
   methods: {
 
     async fetchCurrentLocationWeather() {
-
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
-          const { latitude, longitude } = position.coords;
-
-          const url = `http://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apikey}&units=metric`;
-
-        });
+        this.loading = true;
+        this.error = '';
+        
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            try {
+              const { latitude, longitude } = position.coords;
+              const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apikey}&units=metric`;
+              
+              await this.fetchWeatherData(url);
+            } catch (err) {
+              console.error('Current location weather error:', err);
+              this.error = 'Failed to get weather for current location';
+            } finally {
+              this.loading = false;
+            }
+          },
+          (error) => {
+            console.error('Geolocation error:', error);
+            this.error = 'Location access denied. Please search by city name.';
+            this.loading = false;
+          }
+        );
+      } else {
+        this.error = 'Geolocation is not supported by this browser';
       }
     },
     
@@ -157,7 +175,7 @@ export default {
         console.log('Searching for weather in:', this.city);
         
         // API URL for searching by city name
-        const url = `http://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(this.city)}&appid=${apikey}&units=metric`;
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(this.city)}&appid=${apikey}&units=metric`;
         
         // Fetch weather data
         await this.fetchWeatherData(url);
